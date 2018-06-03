@@ -2,6 +2,7 @@
 import { Component, createElement } from 'react'
 import PropTypes from 'prop-types'
 import invariant from 'invariant'
+import { get, find } from 'lodash'
 import createConnectedFields from './ConnectedFields'
 import shallowCompare from './util/shallowCompare'
 import plain from './structure/plain'
@@ -44,7 +45,14 @@ const createFields = (structure: Structure<*, *>) => {
       }
       const { context } = this
       const { _reduxForm: { register } } = context
-      this.names.forEach(name => register(name, 'Field'))
+      this.props.names.forEach(name =>
+        register(
+          prefixName(context, name),
+          'Field',
+          () => get(find(this.props.validate, { name }), 'funcs', undefined),
+          () => get(find(this.props.warn, { name }), 'funcs', undefined)
+        )
+      )
     }
 
     componentWillReceiveProps(nextProps: Props) {
@@ -52,10 +60,15 @@ const createFields = (structure: Structure<*, *>) => {
         const { context } = this
         const { register, unregister } = context._reduxForm
         // unregister old name
-        this.props.names.forEach(name => unregister(prefixName(context, name)))
+        this.props.names.forEach(name => unregister(name))
         // register new name
         nextProps.names.forEach(name =>
-          register(prefixName(context, name), 'Field')
+          register(
+            name,
+            'Field',
+            () => get(find(this.props.validate, { name }), 'funcs', undefined),
+            () => get(find(this.props.warn, { name }), 'funcs', undefined)
+          )
         )
       }
     }
